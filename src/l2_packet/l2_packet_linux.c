@@ -17,6 +17,9 @@
 #include "crypto/sha1.h"
 #include "crypto/crypto.h"
 #include "l2_packet.h"
+#ifdef CONFIG_SOFTGRE
+#include "ap/softgre.h"
+#endif
 
 
 struct l2_packet_data {
@@ -211,6 +214,12 @@ static void l2_packet_receive(int sock, void *eloop_ctx, void *sock_ctx)
 
 	l2->last_from_br = 0;
 #endif /* CONFIG_NO_LINUX_PACKET_SOCKET_WAR */
+
+#ifdef CONFIG_SOFTGRE
+	/* Set Don't Fragment bit on all inbound IP packets from client stations */
+	softgre_modify_df_bit(buf, res, 1);
+#endif
+
 	l2->rx_callback(l2->rx_callback_ctx, ll.sll_addr, buf, res);
 }
 
@@ -263,6 +272,12 @@ static void l2_packet_receive_br(int sock, void *eloop_ctx, void *sock_ctx)
 	l2->last_from_br_prev = l2->last_from_br;
 	l2->last_from_br = 1;
 	os_memcpy(l2->last_hash, hash, SHA1_MAC_LEN);
+
+#ifdef CONFIG_SOFTGRE
+	/* Set Don't Fragment bit on all inbound IP packets from client stations */
+	softgre_modify_df_bit(buf, res, 1);
+#endif
+
 	l2->rx_callback(l2->rx_callback_ctx, ll.sll_addr, buf, res);
 }
 #endif /* CONFIG_NO_LINUX_PACKET_SOCKET_WAR */

@@ -38,6 +38,9 @@ union wps_event_data;
 #ifdef CONFIG_MESH
 struct mesh_conf;
 #endif /* CONFIG_MESH */
+#ifdef CONFIG_SOFTGRE
+struct softgre_ctx;
+#endif /* CONFIG_SOFTGRE */
 
 #ifdef CONFIG_CTRL_IFACE_UDP
 #define CTRL_IFACE_COOKIE_LEN 8
@@ -512,6 +515,10 @@ struct hostapd_data {
 
 	u64 scan_cookie; /* Scan instance identifier for the ongoing HT40 scan
 			  */
+
+#ifdef CONFIG_SOFTGRE
+	struct softgre_ctx *softgre_ctx;
+#endif /* CONFIG_SOFTGRE */
 };
 
 

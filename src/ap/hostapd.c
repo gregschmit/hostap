@@ -58,6 +58,10 @@
 #include "wpa_auth_kay.h"
 #include "hw_features.h"
 
+#ifdef CONFIG_SOFTGRE
+#include "softgre.h"
+#endif /* CONFIG_SOFTGRE */
+
 
 static int hostapd_flush_old_stations(struct hostapd_data *hapd, u16 reason);
 #ifdef CONFIG_WEP
@@ -604,6 +608,10 @@ void hostapd_free_hapd_data(struct hostapd_data *hapd)
 	}
 	eloop_cancel_timeout(auth_sae_process_commit, hapd, NULL);
 #endif /* CONFIG_SAE */
+
+#ifdef CONFIG_SOFTGRE
+	softgre_deinit(hapd);
+#endif /* CONFIG_SOFTGRE */
 
 #ifdef CONFIG_IEEE80211AX
 	eloop_cancel_timeout(hostapd_switch_color_timeout_handler, hapd, NULL);
@@ -1697,6 +1705,13 @@ setup_mld:
 		wpa_printf(MSG_ERROR, "BSS Load initialization failed");
 		return -1;
 	}
+
+#ifdef CONFIG_SOFTGRE
+	if (softgre_init(hapd)) {
+		wpa_printf(MSG_ERROR, "SoftGRE initialization failed");
+		return -1;
+	}
+#endif /* CONFIG_SOFTGRE */
 
 	if (conf->bridge[0]) {
 		/* Set explicitly configured bridge parameters that might have
