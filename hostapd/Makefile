@@ -1311,6 +1311,11 @@ ifdef CONFIG_NO_TKIP
 CFLAGS += -DCONFIG_NO_TKIP
 endif
 
+ifdef CONFIG_SOFTGRE
+CFLAGS += -DCONFIG_SOFTGRE
+OBJS += ../src/ap/softgre.o
+endif
+
 $(DESTDIR)$(BINDIR)/%: %
 	install -D $(<) $(@)
 

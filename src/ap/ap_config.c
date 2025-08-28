@@ -1004,6 +1004,10 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 	os_free(conf->pasn_groups);
 #endif /* CONFIG_PASN */
 
+#ifdef CONFIG_SOFTGRE
+	os_free(conf->softgre_ip);
+#endif /* CONFIG_SOFTGRE */
+
 	os_free(conf);
 }
 

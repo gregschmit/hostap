@@ -979,6 +979,10 @@ struct hostapd_bss_config {
 	int mbssid_index;
 
 	bool spp_amsdu;
+
+#ifdef CONFIG_SOFTGRE
+	char *softgre_ip;
+#endif /* CONFIG_SOFTGRE */
 };
 
 /**
