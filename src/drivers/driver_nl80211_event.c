@@ -1254,6 +1254,7 @@ static void mlme_event_ch_switch(struct wpa_driver_nl80211_data *drv,
 				 struct nlattr *bw, struct nlattr *cf1,
 				 struct nlattr *cf2,
 				 struct nlattr *punct_bitmap,
+				 struct nlattr *count,
 				 int finished)
 {
 	struct i802_bss *bss;
@@ -1319,6 +1320,8 @@ static void mlme_event_ch_switch(struct wpa_driver_nl80211_data *drv,
 		data.ch_switch.cf1 = nla_get_u32(cf1);
 	if (cf2)
 		data.ch_switch.cf2 = nla_get_u32(cf2);
+	if (count)
+		data.ch_switch.count = nla_get_u32(count);
 
 	if (link) {
 		data.ch_switch.link_id = nla_get_u8(link);
@@ -1698,8 +1701,8 @@ static void mlme_event_unprot_beacon(struct wpa_driver_nl80211_data *drv,
 }
 
 
-static void mlme_event_link_addition(struct i802_bss *bss, const u8 *frame,
-				     size_t len)
+static void mlme_event_link_addition(struct wpa_driver_nl80211_data *drv,
+				     const u8 *frame, size_t len)
 {
 	const struct ieee80211_mgmt *mgmt;
 	union wpa_event_data event;
@@ -1707,7 +1710,6 @@ static void mlme_event_link_addition(struct i802_bss *bss, const u8 *frame,
 	u8 count;
 	const u8 *resp_ie;
 	const u8 *end;
-	struct wpa_driver_nl80211_data *drv = bss->drv;
 
 	if (!frame) {
 		wpa_printf(MSG_DEBUG,
@@ -1738,12 +1740,12 @@ static void mlme_event_link_addition(struct i802_bss *bss, const u8 *frame,
 	resp_ie += 3 * count;
 	curr_valid_links = drv->sta_mlo_info.valid_links;
 
-	if (get_sta_mlo_interface_info(bss) < 0) {
+	if (get_sta_mlo_interface_info(drv) < 0) {
 		wpa_printf(MSG_INFO, "nl80211: Failed to get STA MLO info");
 		return;
 	}
 
-	if (!nl80211_get_assoc_bssid(bss)) {
+	if (!nl80211_get_assoc_bssid(drv)) {
 		wpa_printf(MSG_INFO,
 			   "nl80211: Failed to get BSSID info for newly added links");
 		return;
@@ -2282,7 +2284,7 @@ static void nl80211_cqm_event(struct i802_bss *bss, struct nlattr *tb[])
 	 * nl80211_get_link_signal() and nl80211_get_link_noise() set default
 	 * values in case querying the driver fails.
 	 */
-	res = nl80211_get_link_signal(bss, drv->bssid, &ed.signal_change.data);
+	res = nl80211_get_link_signal(drv, drv->bssid, &ed.signal_change.data);
 	if (res == 0) {
 		wpa_printf(MSG_DEBUG, "nl80211: Signal: %d dBm  txrate: %lu",
 			   ed.signal_change.data.signal,
@@ -2292,7 +2294,7 @@ static void nl80211_cqm_event(struct i802_bss *bss, struct nlattr *tb[])
 			   "nl80211: Querying the driver for signal info failed");
 	}
 
-	res = nl80211_get_link_noise(bss, &ed.signal_change);
+	res = nl80211_get_link_noise(drv, &ed.signal_change);
 	if (res == 0) {
 		wpa_printf(MSG_DEBUG, "nl80211: Noise: %d dBm",
 			   ed.signal_change.current_noise);
@@ -2790,7 +2792,7 @@ static void nl80211_spurious_frame(struct i802_bss *bss, struct nlattr **tb,
 	event.rx_from_unknown.addr = nla_data(tb[NL80211_ATTR_MAC]);
 	event.rx_from_unknown.wds = wds;
 
-	wpa_supplicant_event(drv->ctx, EVENT_RX_FROM_UNKNOWN, &event);
+	wpa_supplicant_event(bss->ctx, EVENT_RX_FROM_UNKNOWN, &event);
 }
 
 
@@ -4280,6 +4282,7 @@ static void do_process_drv_event(struct i802_bss *bss, int cmd,
 				     tb[NL80211_ATTR_CENTER_FREQ1],
 				     tb[NL80211_ATTR_CENTER_FREQ2],
 				     tb[NL80211_ATTR_PUNCT_BITMAP],
+				     tb[NL80211_ATTR_CH_SWITCH_COUNT],
 				     0);
 		break;
 	case NL80211_CMD_CH_SWITCH_NOTIFY:
@@ -4292,6 +4295,7 @@ static void do_process_drv_event(struct i802_bss *bss, int cmd,
 				     tb[NL80211_ATTR_CENTER_FREQ1],
 				     tb[NL80211_ATTR_CENTER_FREQ2],
 				     tb[NL80211_ATTR_PUNCT_BITMAP],
+				     NULL,
 				     1);
 		break;
 	case NL80211_CMD_DISCONNECT:
@@ -4399,7 +4403,7 @@ static void do_process_drv_event(struct i802_bss *bss, int cmd,
 		mlme_event_link_removal(drv, tb[NL80211_ATTR_MLO_LINKS]);
 		break;
 	case NL80211_CMD_ASSOC_MLO_RECONF:
-		mlme_event_link_addition(bss, nla_data(frame), nla_len(frame));
+		mlme_event_link_addition(drv, nla_data(frame), nla_len(frame));
 		break;
 	default:
 		wpa_dbg(drv->ctx, MSG_DEBUG, "nl80211: Ignored unknown event "
@@ -4483,8 +4487,6 @@ int process_global_event(struct nl_msg *msg, void *arg)
 				wiphy_idx = nl80211_get_wiphy_index(bss);
 			if ((ifidx == -1 && !wiphy_idx_set && !wdev_id_set) ||
 			    ifidx == bss->ifindex ||
-			    (bss->br_ifindex > 0 &&
-			     nl80211_has_ifidx(drv, bss->br_ifindex, ifidx)) ||
 			    (wiphy_idx_set && wiphy_idx == wiphy_idx_rx) ||
 			    (wdev_id_set && bss->wdev_id_set &&
 			     wdev_id == bss->wdev_id)) {

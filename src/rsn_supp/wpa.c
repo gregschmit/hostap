@@ -4189,6 +4189,8 @@ static u32 wpa_key_mgmt_suite(struct wpa_sm *sm)
 }
 
 
+#ifdef CONFIG_CTRL_IFACE_MIB
+
 #define RSN_SUITE "%02x-%02x-%02x-%d"
 #define RSN_SUITE_ARG(s) \
 ((s) >> 24) & 0xff, ((s) >> 16) & 0xff, ((s) >> 8) & 0xff, (s) & 0xff
@@ -4270,6 +4272,7 @@ int wpa_sm_get_mib(struct wpa_sm *sm, char *buf, size_t buflen)
 
 	return (int) len;
 }
+#endif
 #endif /* CONFIG_CTRL_IFACE */
 
 
@@ -5045,12 +5048,6 @@ int wpa_sm_set_param(struct wpa_sm *sm, enum wpa_sm_conf_params param,
 		sm->eapol_2_key_info_set_mask = value;
 		break;
 #endif /* CONFIG_TESTING_OPTIONS */
-	case WPA_PARAM_URNM_MFPR:
-		sm->prot_range_neg = value;
-		break;
-	case WPA_PARAM_URNM_MFPR_X20:
-		sm->prot_range_neg_x20 = value;
-		break;
 #ifdef CONFIG_DPP2
 	case WPA_PARAM_DPP_PFS:
 		sm->dpp_pfs = value;
