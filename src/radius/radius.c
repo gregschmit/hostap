@@ -422,6 +422,17 @@ void radius_msg_dump(struct radius_msg *msg)
 	}
 }
 
+size_t radius_msg_get_attr_used(struct radius_msg *msg) {
+	return msg->attr_used;
+}
+
+struct radius_attr_hdr *
+radius_msg_get_attr_hdr(struct radius_msg *msg, size_t idx) {
+	if (idx >= msg->attr_used) {
+		return NULL;
+	}
+	return radius_get_attr_hdr(msg, idx);
+}
 
 u8 * radius_msg_add_msg_auth(struct radius_msg *msg)
 {

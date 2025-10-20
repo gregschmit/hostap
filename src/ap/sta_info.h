@@ -17,6 +17,7 @@
 #include "common/sae.h"
 #include "crypto/sha384.h"
 #include "pasn/pasn_common.h"
+#include "radius/radius.h"
 #include "hostapd.h"
 
 /* STA flags */
@@ -187,6 +188,7 @@ struct sta_info {
 
 	char *identity; /* User-Name from RADIUS */
 	char *radius_cui; /* Chargeable-User-Identity from RADIUS */
+	struct radius_msg *radius_accept; /* RADIUS Access-Accept Message */
 
 	struct ieee80211_ht_capabilities *ht_capabilities;
 	struct ieee80211_vht_capabilities *vht_capabilities;
