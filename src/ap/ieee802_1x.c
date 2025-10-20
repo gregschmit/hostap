@@ -2077,6 +2077,12 @@ ieee802_1x_receive_auth(struct radius_msg *msg, struct radius_msg *req,
 
 	switch (hdr->code) {
 	case RADIUS_CODE_ACCESS_ACCEPT:
+		/* Store a copy of the message for later retrieval. */
+		radius_msg_free(sta->radius_accept);
+		sta->radius_accept = radius_msg_parse(
+			wpabuf_head(radius_msg_get_buf(msg)),
+			wpabuf_len(radius_msg_get_buf(msg))
+		);
 #ifndef CONFIG_NO_VLAN
 		if (hapd->conf->ssid.dynamic_vlan != DYNAMIC_VLAN_DISABLED &&
 		    ieee802_1x_update_vlan(msg, hapd, sta) < 0)
