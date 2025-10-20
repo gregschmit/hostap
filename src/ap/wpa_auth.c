@@ -947,7 +947,6 @@ void wpa_deinit(struct wpa_authenticator *wpa_auth)
 			 * authenticator and start rekey timer.
 			 */
 			next_pa->primary_auth = true;
-			pmksa_cache_auth_set_ctx(next_pa->ml_pmksa, next_pa);
 			if (next_pa->conf.wpa_group_rekey)
 				eloop_register_timeout(
 					next_pa->conf.wpa_group_rekey,
@@ -6239,6 +6238,7 @@ static const char * wpa_bool_txt(int val)
 	return val ? "TRUE" : "FALSE";
 }
 
+#ifdef CONFIG_CTRL_IFACE_MIB
 
 #define RSN_SUITE "%02x-%02x-%02x-%d"
 #define RSN_SUITE_ARG(s) \
@@ -6391,7 +6391,7 @@ int wpa_get_mib_sta(struct wpa_state_machine *sm, char *buf, size_t buflen)
 
 	return len;
 }
-
+#endif
 
 void wpa_auth_countermeasures_start(struct wpa_authenticator *wpa_auth)
 {

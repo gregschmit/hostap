@@ -50,10 +50,6 @@
 #define WLAN_STA_PENDING_DEAUTH_CB BIT(30)
 #define WLAN_STA_NONERP BIT(31)
 
-/* Maximum number of supported rates (from both Supported Rates and Extended
- * Supported Rates IEs). */
-#define WLAN_SUPP_RATES_MAX 32
-
 struct hostapd_data;
 
 struct mbo_non_pref_chan_info {
@@ -99,6 +95,7 @@ struct sta_info {
 	u8 supported_rates[WLAN_SUPP_RATES_MAX];
 	int supported_rates_len;
 	u8 qosinfo; /* Valid when WLAN_STA_WMM is set */
+	u32 bandwidth[2];
 
 #ifdef CONFIG_MESH
 	enum mesh_plink_state plink_state;
@@ -184,6 +181,9 @@ struct sta_info {
 	int vlan_id_bound; /* updated by ap_sta_bind_vlan() */
 	 /* PSKs from RADIUS authentication server */
 	struct hostapd_sta_wpa_psk_short *psk;
+	struct sae_pt *sae_pt;
+	int use_sta_psk;
+	int psk_idx;
 
 	char *identity; /* User-Name from RADIUS */
 	char *radius_cui; /* Chargeable-User-Identity from RADIUS */
@@ -306,6 +306,7 @@ struct sta_info {
 #endif /* CONFIG_TESTING_OPTIONS */
 #ifdef CONFIG_AIRTIME_POLICY
 	unsigned int airtime_weight;
+	unsigned int dyn_airtime_weight;
 	struct os_reltime backlogged_until;
 #endif /* CONFIG_AIRTIME_POLICY */
 
@@ -347,8 +348,6 @@ int ap_for_each_sta(struct hostapd_data *hapd,
 			      void *ctx),
 		    void *ctx);
 struct sta_info * ap_get_sta(struct hostapd_data *hapd, const u8 *sta);
-struct sta_info * ap_get_link_sta(struct hostapd_data *hapd,
-				  const u8 *link_addr);
 struct sta_info * ap_get_sta_p2p(struct hostapd_data *hapd, const u8 *addr);
 void ap_sta_hash_add(struct hostapd_data *hapd, struct sta_info *sta);
 void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta);
@@ -377,8 +376,6 @@ int ap_sta_set_vlan(struct hostapd_data *hapd, struct sta_info *sta,
 		    struct vlan_description *vlan_desc);
 void ap_sta_start_sa_query(struct hostapd_data *hapd, struct sta_info *sta);
 void ap_sta_stop_sa_query(struct hostapd_data *hapd, struct sta_info *sta);
-void ap_sta_set_sa_query_timeout(struct hostapd_data *hapd,
-				 struct sta_info *sta, int value);
 int ap_check_sa_query_timeout(struct hostapd_data *hapd, struct sta_info *sta);
 const char * ap_sta_wpa_get_keyid(struct hostapd_data *hapd,
 				  struct sta_info *sta);
@@ -415,23 +412,8 @@ int ap_sta_re_add(struct hostapd_data *hapd, struct sta_info *sta);
 
 void ap_free_sta_pasn(struct hostapd_data *hapd, struct sta_info *sta);
 
-static inline bool ap_sta_is_mld(struct hostapd_data *hapd,
-				 struct sta_info *sta)
-{
-#ifdef CONFIG_IEEE80211BE
-	return hapd->conf->mld_ap && sta && sta->mld_info.mld_sta;
-#else /* CONFIG_IEEE80211BE */
-	return false;
-#endif /* CONFIG_IEEE80211BE */
-}
-
-static inline void ap_sta_set_mld(struct sta_info *sta, bool mld)
-{
-#ifdef CONFIG_IEEE80211BE
-	if (sta)
-		sta->mld_info.mld_sta = mld;
-#endif /* CONFIG_IEEE80211BE */
-}
+bool ap_sta_is_mld(struct hostapd_data *hapd, struct sta_info *sta);
+void ap_sta_set_mld(struct sta_info *sta, bool mld);
 
 void ap_sta_free_sta_profile(struct mld_info *info);
 
