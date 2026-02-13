@@ -19,6 +19,10 @@
 #include "pasn/pasn_common.h"
 #include "hostapd.h"
 
+#ifndef CONFIG_NO_RADIUS
+#include "radius/radius.h"
+#endif /* CONFIG_NO_RADIUS */
+
 /* STA flags */
 #define WLAN_STA_AUTH BIT(0)
 #define WLAN_STA_ASSOC BIT(1)
@@ -187,6 +191,9 @@ struct sta_info {
 
 	char *identity; /* User-Name from RADIUS */
 	char *radius_cui; /* Chargeable-User-Identity from RADIUS */
+#ifndef CONFIG_NO_RADIUS
+	struct radius_msg *radius_accept; /* RADIUS Access-Accept Message */
+#endif /* CONFIG_NO_RADIUS */
 
 	struct ieee80211_ht_capabilities *ht_capabilities;
 	struct ieee80211_vht_capabilities *vht_capabilities;
