@@ -610,6 +610,23 @@ hostapd_acl_recv_radius(struct radius_msg *msg, struct radius_msg *req,
 				   "No STA/SM entry found for the RADIUS PSK response");
 			goto done;
 		}
+
+		if (success) {
+			/* Store a copy of the message for later retrieval. */
+			struct radius_msg *new_msg;
+
+			new_msg = radius_msg_parse(
+				wpabuf_head(radius_msg_get_buf(msg)),
+				wpabuf_len(radius_msg_get_buf(msg))
+			);
+			if (new_msg) {
+				radius_msg_free(sta->radius_accept);
+				sta->radius_accept = new_msg;
+			} else {
+				wpa_printf(MSG_ERROR,
+					   "Failed to parse RADIUS Access-Accept for storage");
+			}
+		}
 #ifdef NEED_AP_MLME
 		if (success &&
 		    (ieee802_11_set_radius_info(hapd, sta, cache->accepted,
