@@ -477,6 +477,10 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
 	hostapd_free_psk_list(sta->psk);
 	os_free(sta->identity);
 	os_free(sta->radius_cui);
+#ifndef CONFIG_NO_RADIUS
+	radius_msg_free(sta->radius_accept);
+	sta->radius_accept = NULL;
+#endif /* CONFIG_NO_RADIUS */
 	os_free(sta->t_c_url);
 	wpabuf_free(sta->hs20_deauth_req);
 	os_free(sta->hs20_session_info_url);
