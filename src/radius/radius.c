@@ -422,6 +422,33 @@ void radius_msg_dump(struct radius_msg *msg)
 	}
 }
 
+/**
+ * radius_msg_get_attr_used - Get number of attributes in RADIUS message
+ * @msg: RADIUS message
+ * Returns: Number of attributes in the message
+ */
+size_t radius_msg_get_attr_used(struct radius_msg *msg)
+{
+	return msg->attr_used;
+}
+
+
+/**
+ * radius_msg_get_attr_hdr - Get attribute header by index
+ * @msg: RADIUS message
+ * @idx: Attribute index (0 .. radius_msg_get_attr_used() - 1)
+ * Returns: Pointer to attribute header or %NULL if index is out of bounds
+ *
+ * This function can be used to iterate over all attributes in a RADIUS
+ * message. The caller should not modify the returned data.
+ */
+struct radius_attr_hdr *
+radius_msg_get_attr_hdr(struct radius_msg *msg, size_t idx)
+{
+	if (idx >= msg->attr_used) { return NULL; }
+
+	return radius_get_attr_hdr(msg, idx);
+}
 
 u8 * radius_msg_add_msg_auth(struct radius_msg *msg)
 {
